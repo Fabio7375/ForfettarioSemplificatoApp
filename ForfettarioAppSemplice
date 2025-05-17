@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confronto IRPEF vs Forfettario</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5faff;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #007bff;
+    }
+    .input-group {
+      margin: 10px 0;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 6px;
+      margin-top: 5px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    .charts {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+    canvas {
+      width: 250px !important;
+      height: 250px !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Confronto Fiscale: Ordinario vs Forfettario</h1>
+    <div class="input-group">
+      <label for="ricavi">Ricavi annui (€)</label>
+      <input type="number" id="ricavi" value="40000" />
+    </div>
+    <div class="input-group">
+      <label for="costi">Costi deducibili (€)</label>
+      <input type="number" id="costi" value="10000" />
+    </div>
+    <div class="input-group">
+      <label for="aliquotaIRPEF">Aliquota media IRPEF (%)</label>
+      <input type="number" id="aliquotaIRPEF" value="23" />
+    </div>
+    <div class="input-group">
+      <label for="aliquotaForfettario">Aliquota imposta sostitutiva (%)</label>
+      <input type="number" id="aliquotaForfettario" value="15" />
+    </div>
+    <div class="input-group">
+      <label for="inps">Contributi INPS commercianti (€)</label>
+      <input type="number" id="inps" value="4000" />
+    </div>
+    <button onclick="aggiornaGrafici()">Calcola e Confronta</button>
+
+    <div class="charts">
+      <div>
+        <h3>Regime Ordinario</h3>
+        <canvas id="gaugeOrdinario"></canvas>
+      </div>
+      <div>
+        <h3>Regime Forfettario</h3>
+        <canvas id="gaugeForfettario"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let chartOrdinario, chartForfettario;
+
+    function creaGauge(ctx, valore, etichetta) {
+      return new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: [etichetta, 'Netto'],
+          datasets: [{
+            data: [valore, 100 - valore],
+            backgroundColor: ['#dc3545', '#28a745'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          rotation: -90,
+          circumference: 180,
+          cutout: '70%',
+          plugins: {
+            tooltip: { enabled: false },
+            legend: { display: false },
+            title: {
+              display: true,
+              text: valore.toFixed(1) + '%',
+              font: { size: 20 }
+            }
+          }
+        }
+      });
+    }
+
+    function aggiornaGrafici() {
+      const ricavi = parseFloat(document.getElementById("ricavi").value);
+      const costi = parseFloat(document.getElementById("costi").value);
+      const aliquotaIRPEF = parseFloat(document.getElementById("aliquotaIRPEF").value);
+      const aliquotaForfettario = parseFloat(document.getElementById("aliquotaForfettario").value);
+      const contributi = parseFloat(document.getElementById("inps").value);
+
+      const imponibileOrdinario = ricavi - costi;
+      const imposteOrdinario = (imponibileOrdinario * aliquotaIRPEF) / 100 + contributi;
+
+      const imponibileForfettario = ricavi * 0.78; // coefficiente di redditività
+      const imposteForfettario = (imponibileForfettario * aliquotaForfettario) / 100 + contributi;
+
+      const percOrdinario = (imposteOrdinario / ricavi) * 100;
+      const percForfettario = (imposteForfettario / ricavi) * 100;
+
+      if (chartOrdinario) chartOrdinario.destroy();
+      if (chartForfettario) chartForfettario.destroy();
+
+      chartOrdinario = creaGauge(document.getElementById('gaugeOrdinario'), percOrdinario, "Tasse+INPS");
+      chartForfettario = creaGauge(document.getElementById('gaugeForfettario'), percForfettario, "Tasse+INPS");
+    }
+
+    aggiornaGrafici();
+  </script>
+</body>
+</html>
